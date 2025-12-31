@@ -1,0 +1,7 @@
+{
+  "name": "Adi's Studio - Love Booth",
+  "description": "A romantic Korean-style photo booth web app for capturing 4-cut photo strips with cute AI-generated messages.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
