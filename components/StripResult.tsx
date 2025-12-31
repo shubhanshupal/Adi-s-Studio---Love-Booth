@@ -50,13 +50,14 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // High resolution canvas
-    const imgWidth = 600;
-    const imgHeight = 450; // 4:3
-    const padding = 50;
-    const gap = 30;
+    // --- DIMENSIONS CONFIGURATION ---
+    // Reduced dimensions for a narrower, sleeker file
+    const imgWidth = 480; 
+    const imgHeight = 360; // 4:3 Aspect Ratio
+    const padding = 24; // Much tighter padding
+    const gap = 20;
     const headerHeight = 0;
-    const footerHeight = 450; 
+    const footerHeight = 340; // Adjusted for new scale
     
     const stripWidth = imgWidth + (padding * 2);
     const stripHeight = (imgHeight * 4) + (gap * 3) + padding + footerHeight + headerHeight;
@@ -72,26 +73,26 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
     if (selectedColorTheme.pattern === 'hearts') {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         const size = 30;
-        for(let i=0; i<stripWidth; i+=60) {
-            for(let j=0; j<stripHeight; j+=60) {
+        for(let i=0; i<stripWidth; i+=50) {
+            for(let j=0; j<stripHeight; j+=50) {
                 ctx.beginPath();
-                ctx.arc(i, j, 5, 0, Math.PI * 2);
+                ctx.arc(i, j, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
     } else if (selectedColorTheme.pattern === 'film') {
          // Film strip holes
          ctx.fillStyle = '#FFFFFF';
-         const holeW = 15;
-         const holeH = 25;
-         const holeGap = 40;
+         const holeW = 12;
+         const holeH = 20;
+         const holeGap = 30;
          for(let y=20; y < stripHeight; y+=holeGap) {
-             ctx.fillRect(10, y, holeW, holeH);
-             ctx.fillRect(stripWidth - 10 - holeW, y, holeW, holeH);
+             ctx.fillRect(6, y, holeW, holeH);
+             ctx.fillRect(stripWidth - 6 - holeW, y, holeW, holeH);
          }
     } else if (selectedColorTheme.pattern === 'stars') {
          ctx.fillStyle = '#FFFFFF';
-         for(let i=0; i<50; i++) {
+         for(let i=0; i<40; i++) {
              const x = Math.random() * stripWidth;
              const y = Math.random() * stripHeight;
              const r = Math.random() * 2;
@@ -110,13 +111,41 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
         img.src = photoSrc;
         await new Promise((resolve) => {
           img.onload = () => {
+            
+            // Calculate Crop to preserve aspect ratio (object-fit: cover)
+            // Destination dimensions
+            const dW = imgWidth;
+            const dH = imgHeight;
+            const dRatio = dW / dH;
+
+            // Source dimensions
+            const sW = img.naturalWidth;
+            const sH = img.naturalHeight;
+            const sRatio = sW / sH;
+
+            let sx, sy, sCropW, sCropH;
+
+            if (sRatio > dRatio) {
+                // Source is wider than dest (e.g. 16:9 source, 4:3 dest) -> Crop width
+                sCropH = sH;
+                sCropW = sH * dRatio;
+                sx = (sW - sCropW) / 2;
+                sy = 0;
+            } else {
+                // Source is taller than dest -> Crop height
+                sCropW = sW;
+                sCropH = sW / dRatio;
+                sx = 0;
+                sy = (sH - sCropH) / 2;
+            }
+
             // Draw Photo
-            ctx.drawImage(img, padding, yPos, imgWidth, imgHeight);
+            ctx.drawImage(img, sx, sy, sCropW, sCropH, padding, yPos, dW, dH);
             
             // Border around photo
             if (selectedColorTheme.pattern === 'film') {
                  ctx.strokeStyle = 'white';
-                 ctx.lineWidth = 4;
+                 ctx.lineWidth = 3;
                  ctx.strokeRect(padding, yPos, imgWidth, imgHeight);
             } else {
                  ctx.strokeStyle = 'rgba(0,0,0,0.05)';
@@ -135,30 +164,30 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
       
       // Date
       ctx.fillStyle = selectedColorTheme.textColor;
-      ctx.font = '500 24px Quicksand';
+      ctx.font = '500 20px Quicksand';
       ctx.textAlign = 'center';
       ctx.globalAlpha = 0.7;
       const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.');
-      ctx.fillText(date, stripWidth / 2, yPos + 60);
+      ctx.fillText(date, stripWidth / 2, yPos + 50);
       ctx.globalAlpha = 1.0;
 
       // Logo / Watermark
-      ctx.font = 'bold 64px Quicksand';
+      ctx.font = 'bold 48px Quicksand'; // Smaller font for narrower strip
       ctx.letterSpacing = '-2px';
       
       // CHECK FOR SPECIAL ADITI LAYOUT
       const watermarkText = selectedColorTheme.id === 'aditi' ? "Happy New Year" : "Adi's Studio";
-      ctx.fillText(watermarkText, stripWidth / 2, yPos + 140);
+      ctx.fillText(watermarkText, stripWidth / 2, yPos + 110);
       
       // Message
-      ctx.font = '500 32px Quicksand';
+      ctx.font = '500 24px Quicksand'; // Smaller font
       ctx.fillStyle = selectedColorTheme.secondaryColor;
       
       // Wrap text
-      const maxWidth = stripWidth - 100;
+      const maxWidth = stripWidth - 60;
       const words = aiMessage.split(' ');
       let line = '';
-      let lineY = yPos + 220;
+      let lineY = yPos + 180;
       
       for(let n = 0; n < words.length; n++) {
         const testLine = line + words[n] + ' ';
@@ -167,7 +196,7 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
         if (testWidth > maxWidth && n > 0) {
           ctx.fillText(line, stripWidth/2, lineY);
           line = words[n] + ' ';
-          lineY += 45;
+          lineY += 35;
         } else {
           line = testLine;
         }
@@ -176,8 +205,8 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
 
       // Decoration
       if (selectedColorTheme.pattern !== 'film') {
-          ctx.font = '40px serif';
-          ctx.fillText("♥", stripWidth / 2, lineY + 60);
+          ctx.font = '32px serif';
+          ctx.fillText("♥", stripWidth / 2, lineY + 50);
       }
 
       setStripUrl(canvas.toDataURL('image/png', 1.0));
@@ -209,8 +238,8 @@ export const StripResult: React.FC<StripResultProps> = ({ photos, initialTheme, 
                    <p className="font-semibold animate-pulse font-sans">Developing photos...</p>
                </div>
            )}
-           {/* Reduced width from w-[320px] to w-[260px] */}
-           <canvas ref={canvasRef} className="max-w-full h-auto max-h-[75vh] w-[260px] shadow-sm" />
+           {/* Preview width specifically set for UI */}
+           <canvas ref={canvasRef} className="max-w-full h-auto max-h-[75vh] w-[220px] shadow-sm" />
         </div>
 
         {/* Customization Panel */}
